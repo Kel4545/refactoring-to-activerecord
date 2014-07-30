@@ -1,6 +1,9 @@
 require "sinatra"
 require "gschool_database_connection"
 require "rack-flash"
+require "./lib/fish"
+require "./lib/users"
+require "active_record"
 
 class App < Sinatra::Application
   enable :sessions
@@ -15,8 +18,8 @@ class App < Sinatra::Application
     user = current_user
 
     if current_user
-      users = @database_connection.sql("SELECT * FROM users WHERE id != #{user["id"]}")
-      fish = @database_connection.sql("SELECT * FROM fish WHERE user_id = #{current_user["id"]}")
+      users = User.where("id != ?", user[:id])
+      fish = Fish.where(:user_id => user[:id])
       erb :signed_in, locals: {current_user: user, users: users, fish_list: fish}
     else
       erb :signed_out
@@ -29,12 +32,7 @@ class App < Sinatra::Application
 
   post "/registrations" do
     if validate_registration_params
-      insert_sql = <<-SQL
-      INSERT INTO users (username, password)
-      VALUES ('#{params[:username]}', '#{params[:password]}')
-      SQL
-
-      @database_connection.sql(insert_sql)
+    User.create(:username => params[:username], :password => params[:password])
 
       flash[:notice] = "Thanks for registering"
       redirect "/"
@@ -63,13 +61,7 @@ class App < Sinatra::Application
   end
 
   delete "/users/:id" do
-    delete_sql = <<-SQL
-    DELETE FROM users
-    WHERE id = #{params[:id]}
-    SQL
-
-    @database_connection.sql(delete_sql)
-
+    User.where(:id => params[:id]).destroy_all
     redirect "/"
   end
 
@@ -78,18 +70,14 @@ class App < Sinatra::Application
   end
 
   get "/fish/:id" do
-    fish = @database_connection.sql("SELECT * FROM fish WHERE id = #{params[:id]}").first
+    fish = Fish.where(:id => params[:id]).first
     erb :"fish/show", locals: {fish: fish}
   end
 
   post "/fish" do
     if validate_fish_params
-      insert_sql = <<-SQL
-      INSERT INTO fish (name, wikipedia_page, user_id)
-      VALUES ('#{params[:name]}', '#{params[:wikipedia_page]}', #{current_user["id"]})
-      SQL
+      Fish.create(:name => params[:name], :wikipedia_page => params[:wikipedia_page], :user_id => current_user[:id])
 
-      @database_connection.sql(insert_sql)
 
       flash[:notice] = "Fish Created"
 
@@ -184,12 +172,7 @@ class App < Sinatra::Application
 
   def current_user
     if session[:user_id]
-      select_sql = <<-SQL
-      SELECT * FROM users
-      WHERE id = #{session[:user_id]}
-      SQL
-
-      @database_connection.sql(select_sql).first
+      User.find(session[:user_id])
     else
       nil
     end

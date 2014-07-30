@@ -32,7 +32,7 @@ class App < Sinatra::Application
 
   post "/registrations" do
     if validate_registration_params
-    User.create(:username => params[:username], :password => params[:password])
+      User.create(:username => params[:username], :password => params[:password])
 
       flash[:notice] = "Thanks for registering"
       redirect "/"
@@ -136,10 +136,9 @@ class App < Sinatra::Application
   end
 
   def validate_authentication_params
-    if params[:username] != "" && params[:password] != ""
-      return true
-    end
-
+  if
+    return true
+  end
     error_messages = []
 
     if params[:username] == ""
@@ -156,18 +155,15 @@ class App < Sinatra::Application
   end
 
   def username_available?(username)
-    existing_users = @database_connection.sql("SELECT * FROM users where username = '#{username}'")
+    existing_users = User.where("username = ?", username)
 
     existing_users.length == 0
   end
 
   def authenticate_user
-    select_sql = <<-SQL
-    SELECT * FROM users
-    WHERE username = '#{params[:username]}' AND password = '#{params[:password]}'
-    SQL
+    User.where(:username => params[:username], :password => params[:password]).take
 
-    @database_connection.sql(select_sql).first
+
   end
 
   def current_user

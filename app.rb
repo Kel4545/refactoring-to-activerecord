@@ -27,17 +27,16 @@ class App < Sinatra::Application
   end
 
   get "/register" do
-    erb :register
+    erb :register, :locals => {:user => nil}
   end
 
   post "/registrations" do
-    if validate_registration_params
-      User.create(:username => params[:username], :password => params[:password])
-
+      user = User.create(:username => params[:username], :password => params[:password])
+      if user.errors.messages == {}
       flash[:notice] = "Thanks for registering"
       redirect "/"
     else
-      erb :register
+      erb :register, :locals => {:user => user}
     end
   end
 
@@ -66,7 +65,7 @@ class App < Sinatra::Application
   end
 
   get "/fish/new" do
-    erb :"fish/new"
+    erb :"fish/new", locals: {fish: nil}
   end
 
   get "/fish/:id" do
@@ -75,71 +74,71 @@ class App < Sinatra::Application
   end
 
   post "/fish" do
-    if validate_fish_params
-      Fish.create(:name => params[:name], :wikipedia_page => params[:wikipedia_page], :user_id => current_user[:id])
-
+      fish = Fish.create(:name => params[:name], :wikipedia_page => params[:wikipedia_page], :user_id => current_user[:id])
+      if fish.errors.messages == {}
 
       flash[:notice] = "Fish Created"
 
       redirect "/"
     else
-      erb :"fish/new"
+      erb :"fish/new", locals: {fish: fish}
     end
   end
 
   private
+  #
+  # def validate_registration_params
+  #   if params[:username] != "" && params[:password].length > 3 && username_available?(params[:username])
+  #     return true
+  #   end
+  #
+  #   error_messages = []
+  #
+  #   if params[:username] == ""
+  #     error_messages.push("Username is required")
+  #   end
+  #
+  #   if !username_available?(params[:username])
+  #     error_messages.push("Username has already been taken")
+  #   end
+  #
+  #   if params[:password] == ""
+  #     error_messages.push("Password is required")
+  #   elsif params[:password].length < 4
+  #     error_messages.push("Password must be at least 4 characters")
+  #   end
+  #
+  #   flash[:notice] = error_messages.join(", ")
+  #
+  #   false
+  # end
 
-  def validate_registration_params
-    if params[:username] != "" && params[:password].length > 3 && username_available?(params[:username])
-      return true
-    end
-
-    error_messages = []
-
-    if params[:username] == ""
-      error_messages.push("Username is required")
-    end
-
-    if !username_available?(params[:username])
-      error_messages.push("Username has already been taken")
-    end
-
-    if params[:password] == ""
-      error_messages.push("Password is required")
-    elsif params[:password].length < 4
-      error_messages.push("Password must be at least 4 characters")
-    end
-
-    flash[:notice] = error_messages.join(", ")
-
-    false
-  end
-
-  def validate_fish_params
-    if params[:name] != "" && params[:wikipedia_page] != ""
-      return true
-    end
-
-    error_messages = []
-
-    if params[:name] == ""
-      error_messages.push("Name is required")
-    end
-
-    if params[:wikipedia_page] == ""
-      error_messages.push("Wikipedia page is required")
-    end
-
-    flash[:notice] = error_messages.join(", ")
-
-    false
-  end
+  # def validate_fish_params
+  #   if params[:name] != "" && params[:wikipedia_page] != ""
+  #     return true
+  #   end
+  #
+  #   error_messages = []
+  #
+  #   if params[:name] == ""
+  #     error_messages.push("Name is required")
+  #   end
+  #
+  #   if params[:wikipedia_page] == ""
+  #     error_messages.push("Wikipedia page is required")
+  #   end
+  #
+  #   flash[:notice] = error_messages.join(", ")
+  #
+  #   false
+  # end
 
   def validate_authentication_params
-  if
+  if params[:username] != "" && params[:password] != ""
     return true
   end
-    error_messages = []
+
+  error_messages = []
 
     if params[:username] == ""
       error_messages.push("Username is required")
@@ -152,7 +151,7 @@ class App < Sinatra::Application
     flash[:notice] = error_messages.join(", ")
 
     false
-  end
+     end
 
   def username_available?(username)
     existing_users = User.where("username = ?", username)
@@ -173,4 +172,5 @@ class App < Sinatra::Application
       nil
     end
   end
-end
+  end
+

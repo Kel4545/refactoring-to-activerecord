@@ -4,6 +4,7 @@ require "rack-flash"
 require "./lib/fish"
 require "./lib/users"
 require "active_record"
+require "excellent"
 
 class App < Sinatra::Application
   enable :sessions
